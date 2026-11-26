@@ -17,6 +17,23 @@ npx expo start
 
 Scan the QR code with Expo Go. Your phone and computer must be on the same Wi-Fi network. If they aren't, run `npx expo start --tunnel`.
 
+## Install the APK (no computer needed)
+
+Copy `AtHand-prototype.apk` to an Android phone (Android 7 or newer) and open it. The phone will ask you to allow installs from that source (Files, Drive or Messenger), so allow it. Android may show a Play Protect warning because this test build isn't from the Play Store. Choose **Install anyway**.
+
+## Build the APK
+
+You need JDK 17 and the Android SDK, with platform 37.0, build-tools 37.0.0, NDK 27.1.12297006 and CMake 3.22.1. Set `JAVA_HOME` and `ANDROID_HOME` to point at them.
+
+```bash
+cd mobile
+npm install
+npm run apk:prepare   # generates android/ (gitignored)
+npm run apk:build     # about 7 minutes the first time
+```
+
+The output is `mobile/android/app/build/outputs/apk/release/app-release.apk`. It's signed with the Android debug key, which is fine for testing but can't be published to the Play Store.
+
 ## What the prototype is
 
 It runs on fake data held in memory. Nothing is saved, and every reload starts fresh. Payment, ID checks, camera photos and notifications are simulated. One phone plays every role. To switch between borrower, lender, guardian and an unverified new user, go to **Profile → Demo: switch user**.

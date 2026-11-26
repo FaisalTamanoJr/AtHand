@@ -1,1 +1,5 @@
 .DS_Store
+
+# Built APKs: share these through a GitHub Release or a drive, not git
+dist/
+*.apk
