@@ -35,10 +35,11 @@
   },
   "scripts": {
     "start": "expo start",
-    "android": "expo start --android",
-    "ios": "expo start --ios",
-    "web": "expo start --web",
-    "lint": "expo lint"
+    "android": "expo run:android",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "apk:prepare": "expo prebuild --platform android",
+    "apk:build": "cd android && ./gradlew assembleRelease -PreactNativeArchitectures=arm64-v8a,armeabi-v7a"
   },
   "private": true
 }
