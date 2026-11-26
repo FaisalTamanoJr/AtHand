@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { Pressable, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
-import { Banner, Button, Card, Screen, Section, ToggleRow } from '@/components/ui';
+import { Banner, Button, Card, Screen, Section, Thumb, ToggleRow } from '@/components/ui';
 import { Spacing } from '@/constants/theme';
 import type { CheckKind } from '@/data/types';
 import { useTheme } from '@/hooks/use-theme';
@@ -74,7 +74,11 @@ export default function CheckScreen() {
                 padding: Spacing.one,
                 backgroundColor: photos[i] ? theme.tintSoft : theme.backgroundElement,
               }}>
-              <ThemedText style={{ fontSize: 28, lineHeight: 36 }}>{photos[i] ? listing.emoji : '📸'}</ThemedText>
+              {photos[i] ? (
+                <Thumb emoji={listing.emoji} photo={listing.photo} size={44} />
+              ) : (
+                <ThemedText style={{ fontSize: 28, lineHeight: 36 }}>📸</ThemedText>
+              )}
               <ThemedText type="small" themeColor="textSecondary" style={{ textAlign: 'center', fontSize: 11, lineHeight: 14 }}>
                 {photos[i] ? 'Captured' : slot}
               </ThemedText>

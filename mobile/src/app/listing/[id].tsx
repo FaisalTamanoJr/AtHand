@@ -1,8 +1,10 @@
+import { Image } from 'expo-image';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { Avatar, Badge, Banner, Button, Card, Row, Screen, Section, Thumb } from '@/components/ui';
+import { CATEGORY_STYLE } from '@/constants/categories';
 import { Spacing } from '@/constants/theme';
 import { DEPOSIT_RATE, peso, trustTier } from '@/lib/rules';
 import { useApp } from '@/store/app-store';
@@ -40,12 +42,19 @@ export default function ListingScreen() {
         )
       }>
       <Stack.Screen options={{ title: listing.category }} />
-      <View style={{ alignItems: 'center', gap: Spacing.two }}>
-        <Thumb emoji={listing.emoji} size={140} />
-        <ThemedText type="small" themeColor="textSecondary">
-          3 photos (placeholders in this prototype)
-        </ThemedText>
-      </View>
+      {listing.photo ? (
+        <Image
+          source={listing.photo}
+          contentFit="cover"
+          transition={150}
+          accessibilityLabel={listing.title}
+          style={{ width: '100%', aspectRatio: 4 / 3, borderRadius: 20 }}
+        />
+      ) : (
+        <View style={{ alignItems: 'center' }}>
+          <Thumb emoji={listing.emoji} size={140} color={CATEGORY_STYLE[listing.category].color} />
+        </View>
+      )}
 
       <View style={{ gap: Spacing.one }}>
         <ThemedText type="heading">{listing.title}</ThemedText>

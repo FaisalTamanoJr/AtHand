@@ -16,14 +16,22 @@ export default function ProfileScreen() {
   const wards = state.users.filter((u) => u.guardianId === me.id);
 
   return (
-    <Screen tab>
-      <View style={{ flexDirection: 'row', gap: Spacing.three, alignItems: 'center' }}>
-        <Avatar name={me.name} size={64} />
-        <View style={{ flex: 1, gap: Spacing.one }}>
-          <ThemedText type="heading">{me.name}</ThemedText>
-          <VerificationBadge user={me} />
+    <Screen
+      tab
+      hero={
+        <View style={{ flexDirection: 'row', gap: Spacing.three, alignItems: 'center' }}>
+          <Avatar name={me.name} size={64} ring />
+          <View style={{ flex: 1, gap: Spacing.one }}>
+            <ThemedText type="heading" style={{ color: '#FFFFFF' }}>
+              {me.name}
+            </ThemedText>
+            <ThemedText type="small" style={{ color: 'rgba(255,255,255,0.8)' }}>
+              {me.area} · {tier} tier
+            </ThemedText>
+            <VerificationBadge user={me} />
+          </View>
         </View>
-      </View>
+      }>
 
       {me.verification === 'unverified' ? (
         <Banner tone="warning">

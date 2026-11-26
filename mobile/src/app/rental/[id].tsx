@@ -32,7 +32,7 @@ export default function RentalScreen() {
   return (
     <Screen>
       <View style={{ flexDirection: 'row', gap: Spacing.three, alignItems: 'center' }}>
-        <Thumb emoji={listing.emoji} size={56} />
+        <Thumb emoji={listing.emoji} photo={listing.photo} size={56} />
         <View style={{ flex: 1, gap: 2 }}>
           <ThemedText type="smallBold">{listing.title}</ThemedText>
           <ThemedText type="small" themeColor="textSecondary">
@@ -63,8 +63,8 @@ export default function RentalScreen() {
       {booking.pickupCheck || booking.returnCheck ? (
         <Section title="Condition checks">
           <View style={{ flexDirection: 'row', gap: Spacing.two }}>
-            <CheckSummary title="Pickup" check={booking.pickupCheck} emoji={listing.emoji} />
-            <CheckSummary title="Return" check={booking.returnCheck} emoji={listing.emoji} />
+            <CheckSummary title="Pickup" check={booking.pickupCheck} emoji={listing.emoji} photo={listing.photo} />
+            <CheckSummary title="Return" check={booking.returnCheck} emoji={listing.emoji} photo={listing.photo} />
           </View>
         </Section>
       ) : null}
@@ -237,13 +237,23 @@ function Timeline({ booking }: { booking: Booking }) {
   );
 }
 
-function CheckSummary({ title, check, emoji }: { title: string; check?: Booking['pickupCheck']; emoji: string }) {
+function CheckSummary({
+  title,
+  check,
+  emoji,
+  photo,
+}: {
+  title: string;
+  check?: Booking['pickupCheck'];
+  emoji: string;
+  photo?: number;
+}) {
   return (
     <Card style={{ flex: 1 }}>
       <ThemedText type="smallBold">{title}</ThemedText>
       {check ? (
         <>
-          <Thumb emoji={emoji} size={56} />
+          <Thumb emoji={emoji} photo={photo} size={56} />
           <ThemedText type="small" themeColor="textSecondary">
             {check.photos} photos · {check.checklist.length} checks · server time {shortDate(check.serverTime)}
           </ThemedText>

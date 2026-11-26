@@ -2,14 +2,17 @@ import { useRouter } from 'expo-router';
 import { View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
-import { Avatar, Banner, Card, Screen, Section } from '@/components/ui';
+import { Icon } from '@/components/icon';
+import { Avatar, Banner, Card, HeroTitle, IconTile, Screen, Section } from '@/components/ui';
 import { Spacing } from '@/constants/theme';
 import { shortDate } from '@/lib/rules';
+import { useTheme } from '@/hooks/use-theme';
 import { useApp } from '@/store/app-store';
 
 export default function InboxScreen() {
   const { state, me, listing, user } = useApp();
   const router = useRouter();
+  const theme = useTheme();
 
   const notices = state.notices.filter((n) => n.userId === me.id);
   const threads = state.bookings
@@ -23,8 +26,7 @@ export default function InboxScreen() {
     .filter((t) => t.last);
 
   return (
-    <Screen tab>
-      <ThemedText type="heading">Inbox</ThemedText>
+    <Screen tab hero={<HeroTitle title="Inbox" subtitle={`${notices.length} notifications · ${threads.length} chats`} />}>
       <Section title="Notifications">
         {notices.length === 0 ? (
           <Banner tone="neutral">
@@ -37,10 +39,15 @@ export default function InboxScreen() {
               onPress={
                 n.bookingId ? () => router.push({ pathname: '/rental/[id]', params: { id: n.bookingId! } }) : undefined
               }>
-              <ThemedText type="small">{n.text}</ThemedText>
-              <ThemedText type="small" themeColor="textSecondary">
-                {shortDate(n.at)}
-              </ThemedText>
+              <View style={{ flexDirection: 'row', gap: Spacing.three, alignItems: 'center' }}>
+                <IconTile icon={{ ios: 'bell', md: 'notifications' }} color={theme.tint} size={40} />
+                <View style={{ flex: 1, gap: 2 }}>
+                  <ThemedText type="small">{n.text}</ThemedText>
+                  <ThemedText type="small" themeColor="textSecondary" style={{ fontSize: 12 }}>
+                    {shortDate(n.at)}
+                  </ThemedText>
+                </View>
+              </View>
             </Card>
           ))
         )}
@@ -63,6 +70,7 @@ export default function InboxScreen() {
                     {t.last!.text}
                   </ThemedText>
                 </View>
+                <Icon name={{ ios: 'chevron.right', md: 'chevron_right' }} size={18} color={theme.textSecondary} />
               </View>
             </Card>
           ))

@@ -1,3 +1,4 @@
+import { Image } from 'expo-image';
 import type { ReactNode } from 'react';
 import {
   Pressable,
@@ -12,36 +13,42 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { Icon, type IconName } from '@/components/icon';
 import { ThemedText } from '@/components/themed-text';
 import { BottomTabInset, Spacing } from '@/constants/theme';
-import { useTheme } from '@/hooks/use-theme';
+import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useGradients, useTheme } from '@/hooks/use-theme';
 
 type ScreenProps = {
   children: ReactNode;
-  /** Tab screens have no stack header, so they pad for the status bar and tab bar themselves. */
+  /** Tab screens have no stack header, so they pad for the status bar themselves. */
   tab?: boolean;
+  /** Content for the blue header at the top of the screen. It pads for the status bar. */
+  hero?: ReactNode;
   footer?: ReactNode;
 };
 
-export function Screen({ children, tab, footer }: ScreenProps) {
+export function Screen({ children, tab, hero, footer }: ScreenProps) {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   return (
     <View style={{ flex: 1, backgroundColor: theme.background }}>
       <ScrollView
-        contentInsetAdjustmentBehavior="automatic"
+        contentInsetAdjustmentBehavior={hero ? 'never' : 'automatic'}
         keyboardShouldPersistTaps="handled"
-        contentContainerStyle={[
-          styles.screen,
-          tab && { paddingTop: insets.top + Spacing.three, paddingBottom: BottomTabInset + Spacing.four },
-        ]}>
-        {children}
+        contentContainerStyle={tab && { paddingBottom: BottomTabInset + Spacing.four }}>
+        {hero ? <Hero>{hero}</Hero> : null}
+        <View style={[styles.screen, tab && !hero && { paddingTop: insets.top + Spacing.three }]}>{children}</View>
       </ScrollView>
       {footer ? (
         <View
           style={[
             styles.footer,
-            { borderTopColor: theme.border, backgroundColor: theme.background, paddingBottom: insets.bottom + Spacing.three },
+            {
+              borderTopColor: theme.border,
+              backgroundColor: theme.backgroundElement,
+              paddingBottom: insets.bottom + Spacing.three,
+            },
           ]}>
           {footer}
         </View>
@@ -50,12 +57,116 @@ export function Screen({ children, tab, footer }: ScreenProps) {
   );
 }
 
+/** The blue gradient band with rounded bottom corners that tops the tab screens. */
+export function Hero({ children }: { children: ReactNode }) {
+  const theme = useTheme();
+  const gradients = useGradients();
+  const insets = useSafeAreaInsets();
+  return (
+    <View
+      style={[
+        styles.hero,
+        { backgroundColor: theme.tint, backgroundImage: gradients.hero, paddingTop: insets.top + Spacing.three },
+      ]}>
+      {children}
+    </View>
+  );
+}
+
+/** Title and subtitle in white, for use inside `Hero`. */
+export function HeroTitle({ title, subtitle, right }: { title: string; subtitle?: string; right?: ReactNode }) {
+  return (
+    <View style={styles.row}>
+      <View style={{ flex: 1, gap: 2 }}>
+        <ThemedText type="heading" style={{ color: '#FFFFFF', fontSize: 26, lineHeight: 32 }}>
+          {title}
+        </ThemedText>
+        {subtitle ? (
+          <ThemedText type="small" style={{ color: 'rgba(255,255,255,0.78)' }}>
+            {subtitle}
+          </ThemedText>
+        ) : null}
+      </View>
+      {right}
+    </View>
+  );
+}
+
+/** Round translucent button for the hero, e.g. the notification bell. */
+export function HeroIconButton({
+  icon,
+  onPress,
+  dot,
+  label,
+}: {
+  icon: IconName;
+  onPress: () => void;
+  dot?: boolean;
+  label: string;
+}) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      onPress={onPress}
+      style={({ pressed }) => [styles.heroIcon, pressed && { opacity: 0.7 }]}>
+      <Icon name={icon} size={20} color="#FFFFFF" />
+      {dot ? <View style={styles.heroDot} /> : null}
+    </Pressable>
+  );
+}
+
+export function SearchBar({
+  value,
+  onChangeText,
+  placeholder,
+  onFilter,
+  filterActive,
+}: {
+  value: string;
+  onChangeText: (text: string) => void;
+  placeholder: string;
+  onFilter?: () => void;
+  filterActive?: boolean;
+}) {
+  const theme = useTheme();
+  return (
+    <View style={[styles.search, { backgroundColor: theme.backgroundElement }]}>
+      <Icon name={{ ios: 'magnifyingglass', md: 'search' }} size={20} color={theme.textSecondary} />
+      <TextInput
+        accessibilityLabel="Search"
+        placeholder={placeholder}
+        placeholderTextColor={theme.textSecondary}
+        value={value}
+        onChangeText={onChangeText}
+        style={{ flex: 1, color: theme.text, fontSize: 15, paddingVertical: 12 }}
+      />
+      {onFilter ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Filters"
+          accessibilityState={{ expanded: filterActive }}
+          onPress={onFilter}
+          style={[styles.filterButton, { backgroundColor: filterActive ? theme.tint : theme.tintSoft }]}>
+          <Icon name={{ ios: 'slider.horizontal.3', md: 'tune' }} size={18} color={filterActive ? theme.onTint : theme.tint} />
+        </Pressable>
+      ) : null}
+    </View>
+  );
+}
+
+export function useCardShadow(): ViewStyle {
+  const theme = useTheme();
+  return { boxShadow: `0px 4px 16px ${theme.shadow}` };
+}
+
 export function Card({ children, style, onPress }: { children: ReactNode; style?: StyleProp<ViewStyle>; onPress?: () => void }) {
   const theme = useTheme();
-  const cardStyle = [styles.card, { backgroundColor: theme.backgroundElement }, style];
+  const shadow = useCardShadow();
+  const cardStyle = [styles.card, { backgroundColor: theme.backgroundElement, borderColor: theme.border }, shadow, style];
   if (!onPress) return <View style={cardStyle}>{children}</View>;
   return (
-    <Pressable onPress={onPress} style={({ pressed }) => [cardStyle, pressed && { opacity: 0.7 }]}>
+    <Pressable onPress={onPress} style={({ pressed }) => [cardStyle, pressed && { opacity: 0.8, transform: [{ scale: 0.99 }] }]}>
       {children}
     </Pressable>
   );
@@ -66,19 +177,27 @@ type ButtonProps = {
   onPress: () => void;
   variant?: 'primary' | 'secondary' | 'danger';
   disabled?: boolean;
+  icon?: IconName;
+  compact?: boolean;
 };
 
-export function Button({ label, onPress, variant = 'primary', disabled }: ButtonProps) {
+export function Button({ label, onPress, variant = 'primary', disabled, icon, compact }: ButtonProps) {
   const theme = useTheme();
-  const background = variant === 'primary' ? theme.tint : variant === 'danger' ? theme.dangerSoft : theme.backgroundSelected;
-  const color = variant === 'primary' ? theme.onTint : variant === 'danger' ? theme.danger : theme.text;
+  const background = variant === 'primary' ? theme.tint : variant === 'danger' ? theme.dangerSoft : theme.tintSoft;
+  const color = variant === 'primary' ? theme.onTint : variant === 'danger' ? theme.danger : theme.tint;
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityState={{ disabled }}
       disabled={disabled}
       onPress={onPress}
-      style={({ pressed }) => [styles.button, { backgroundColor: background, opacity: disabled ? 0.4 : pressed ? 0.75 : 1 }]}>
+      style={({ pressed }) => [
+        styles.button,
+        compact && styles.buttonCompact,
+        { backgroundColor: background, opacity: disabled ? 0.4 : pressed ? 0.8 : 1 },
+        variant === 'primary' && !disabled && { boxShadow: '0px 6px 14px rgba(21, 96, 232, 0.28)' },
+      ]}>
+      {icon ? <Icon name={icon} size={18} color={color} /> : null}
       <ThemedText type="smallBold" style={{ color, textAlign: 'center' }}>
         {label}
       </ThemedText>
@@ -86,30 +205,37 @@ export function Button({ label, onPress, variant = 'primary', disabled }: Button
   );
 }
 
-type Tone = 'neutral' | 'tint' | 'warning' | 'danger';
+type Tone = 'neutral' | 'tint' | 'success' | 'warning' | 'danger';
 
-export function Badge({ label, tone = 'neutral' }: { label: string; tone?: Tone }) {
+function useToneColors(): Record<Tone, [string, string]> {
   const theme = useTheme();
-  const colors: Record<Tone, [string, string]> = {
-    neutral: [theme.backgroundSelected, theme.text],
+  return {
+    neutral: [theme.backgroundSelected, theme.textSecondary],
     tint: [theme.tintSoft, theme.tint],
+    success: [theme.successSoft, theme.success],
     warning: [theme.warningSoft, theme.warning],
     danger: [theme.dangerSoft, theme.danger],
   };
-  const [background, color] = colors[tone];
+}
+
+export function Badge({ label, tone = 'neutral' }: { label: string; tone?: Tone }) {
+  const [background, color] = useToneColors()[tone];
   return (
     <View style={[styles.badge, { backgroundColor: background }]}>
-      <ThemedText type="smallBold" style={{ color, fontSize: 12, lineHeight: 16 }}>
-        {label}
-      </ThemedText>
+      <ThemedText style={[styles.badgeText, { color }]}>{label.toUpperCase()}</ThemedText>
     </View>
   );
 }
 
 export function Banner({ children, tone = 'tint' }: { children: ReactNode; tone?: Tone }) {
   const theme = useTheme();
-  const background = { neutral: theme.backgroundElement, tint: theme.tintSoft, warning: theme.warningSoft, danger: theme.dangerSoft }[tone];
-  return <View style={[styles.banner, { backgroundColor: background }]}>{children}</View>;
+  const [soft] = useToneColors()[tone];
+  const background = tone === 'neutral' ? theme.backgroundElement : soft;
+  return (
+    <View style={[styles.banner, { backgroundColor: background, borderColor: tone === 'neutral' ? theme.border : 'transparent' }]}>
+      {children}
+    </View>
+  );
 }
 
 export function Chip({ label, selected, onPress }: { label: string; selected?: boolean; onPress: () => void }) {
@@ -119,8 +245,14 @@ export function Chip({ label, selected, onPress }: { label: string; selected?: b
       accessibilityRole="button"
       accessibilityState={{ selected }}
       onPress={onPress}
-      style={[styles.chip, { backgroundColor: selected ? theme.tint : theme.backgroundElement }]}>
-      <ThemedText type="small" style={{ color: selected ? theme.onTint : theme.text }}>
+      style={[
+        styles.chip,
+        {
+          backgroundColor: selected ? theme.tint : theme.backgroundElement,
+          borderColor: selected ? theme.tint : theme.border,
+        },
+      ]}>
+      <ThemedText type="smallBold" style={{ color: selected ? theme.onTint : theme.text, fontSize: 13 }}>
         {label}
       </ThemedText>
     </Pressable>
@@ -131,24 +263,36 @@ export function Segmented<T extends string>({
   options,
   value,
   onChange,
+  onHero,
 }: {
-  options: { value: T; label: string }[];
+  options: { value: T; label: string; icon?: IconName }[];
   value: T;
   onChange: (value: T) => void;
+  /** Style for the blue hero: white selected pill on a translucent track. */
+  onHero?: boolean;
 }) {
   const theme = useTheme();
   return (
-    <View style={[styles.segmented, { backgroundColor: theme.backgroundElement }]}>
+    <View
+      style={[
+        styles.segmented,
+        onHero
+          ? { backgroundColor: 'rgba(255,255,255,0.14)' }
+          : { backgroundColor: theme.backgroundElement, borderWidth: 1, borderColor: theme.border },
+      ]}>
       {options.map((option) => {
         const selected = option.value === value;
+        const color = onHero ? (selected ? theme.tint : '#FFFFFF') : selected ? theme.onTint : theme.textSecondary;
+        const background = selected ? (onHero ? '#FFFFFF' : theme.tint) : 'transparent';
         return (
           <Pressable
             key={option.value}
             accessibilityRole="button"
             accessibilityState={{ selected }}
             onPress={() => onChange(option.value)}
-            style={[styles.segment, selected && { backgroundColor: theme.tint }]}>
-            <ThemedText type="smallBold" style={{ color: selected ? theme.onTint : theme.text, textAlign: 'center' }}>
+            style={[styles.segment, { backgroundColor: background }]}>
+            {option.icon ? <Icon name={option.icon} size={17} color={color} /> : null}
+            <ThemedText type="smallBold" style={{ color, textAlign: 'center' }} numberOfLines={1}>
               {option.label}
             </ThemedText>
           </Pressable>
@@ -190,35 +334,127 @@ export function Field({ label, ...props }: TextInputProps & { label: string }) {
         accessibilityLabel={label}
         placeholderTextColor={theme.textSecondary}
         {...props}
-        style={[styles.input, { backgroundColor: theme.backgroundElement, color: theme.text }, props.style]}
+        style={[
+          styles.input,
+          { backgroundColor: theme.backgroundElement, borderColor: theme.border, color: theme.text },
+          props.style,
+        ]}
       />
     </View>
   );
 }
 
-export function Section({ title, children, action }: { title: string; children: ReactNode; action?: ReactNode }) {
+/** Uppercase muted label like "CATEGORIES"; with a subtitle it becomes a large bold heading instead. */
+export function SectionHeader({ title, subtitle, action }: { title: string; subtitle?: string; action?: ReactNode }) {
   return (
-    <View style={{ gap: Spacing.two }}>
-      <View style={styles.row}>
-        <ThemedText type="heading" style={{ fontSize: 18, lineHeight: 24 }}>
-          {title}
-        </ThemedText>
-        {action}
+    <View style={styles.row}>
+      <View style={{ flex: 1, gap: 2 }}>
+        {subtitle ? (
+          <>
+            <ThemedText type="heading" style={{ fontSize: 20, lineHeight: 26 }}>
+              {title}
+            </ThemedText>
+            <ThemedText type="small" themeColor="textSecondary">
+              {subtitle}
+            </ThemedText>
+          </>
+        ) : (
+          <ThemedText type="smallBold" themeColor="textSecondary" style={styles.sectionLabel}>
+            {title.toUpperCase()}
+          </ThemedText>
+        )}
       </View>
+      {action}
+    </View>
+  );
+}
+
+export function Section({
+  title,
+  subtitle,
+  children,
+  action,
+}: {
+  title: string;
+  subtitle?: string;
+  children: ReactNode;
+  action?: ReactNode;
+}) {
+  return (
+    <View style={{ gap: Spacing.two + 2 }}>
+      <SectionHeader title={title} subtitle={subtitle} action={action} />
       {children}
     </View>
   );
 }
 
-export function Thumb({ emoji, size = 64 }: { emoji: string; size?: number }) {
+/** Blue text button for section headers, e.g. "View all". */
+export function LinkButton({ label, onPress }: { label: string; onPress: () => void }) {
   const theme = useTheme();
+  return (
+    <Pressable accessibilityRole="button" onPress={onPress} hitSlop={8}>
+      <ThemedText type="smallBold" style={{ color: theme.tint }}>
+        {label}
+      </ThemedText>
+    </Pressable>
+  );
+}
+
+/** Rounded pastel square holding an icon, as used for categories and quick actions. */
+export function IconTile({
+  icon,
+  color,
+  soft,
+  size = 52,
+  selected,
+}: {
+  icon: IconName;
+  color: string;
+  soft?: string;
+  size?: number;
+  selected?: boolean;
+}) {
+  const scheme = useColorScheme();
+  const background = scheme === 'dark' || !soft ? `${color}26` : soft;
   return (
     <View
       style={{
         width: size,
         height: size,
-        borderRadius: size / 5,
-        backgroundColor: theme.tintSoft,
+        borderRadius: size * 0.32,
+        backgroundColor: background,
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderWidth: 2,
+        borderColor: selected ? color : 'transparent',
+      }}>
+      <Icon name={icon} size={size * 0.46} color={color} />
+    </View>
+  );
+}
+
+/** An item's photo, or its emoji on a pastel square when it has no photo. */
+export function Thumb({ emoji, photo, size = 64, color }: { emoji: string; photo?: number; size?: number; color?: string }) {
+  const theme = useTheme();
+  const scheme = useColorScheme();
+  const background = color ? (scheme === 'dark' ? `${color}26` : `${color}1A`) : theme.tintSoft;
+  if (photo) {
+    return (
+      <Image
+        source={photo}
+        contentFit="cover"
+        transition={150}
+        style={{ width: size, height: size, borderRadius: size / 4, backgroundColor: background }}
+      />
+    );
+  }
+  return (
+    <View
+      style={{
+        width: size,
+        height: size,
+        borderRadius: size / 4,
+        backgroundColor: background,
         alignItems: 'center',
         justifyContent: 'center',
       }}>
@@ -227,7 +463,7 @@ export function Thumb({ emoji, size = 64 }: { emoji: string; size?: number }) {
   );
 }
 
-export function Avatar({ name, size = 40 }: { name: string; size?: number }) {
+export function Avatar({ name, size = 40, ring }: { name: string; size?: number; ring?: boolean }) {
   const theme = useTheme();
   const initials = name
     .split(' ')
@@ -240,11 +476,13 @@ export function Avatar({ name, size = 40 }: { name: string; size?: number }) {
         width: size,
         height: size,
         borderRadius: size / 2,
-        backgroundColor: theme.tint,
+        backgroundColor: ring ? 'rgba(255,255,255,0.18)' : theme.tint,
+        borderWidth: ring ? 2 : 0,
+        borderColor: 'rgba(255,255,255,0.85)',
         alignItems: 'center',
         justifyContent: 'center',
       }}>
-      <ThemedText type="smallBold" style={{ color: theme.onTint, fontSize: size * 0.38 }}>
+      <ThemedText type="smallBold" style={{ color: theme.onTint, fontSize: size * 0.36 }}>
         {initials}
       </ThemedText>
     </View>
@@ -254,7 +492,48 @@ export function Avatar({ name, size = 40 }: { name: string; size?: number }) {
 const styles = StyleSheet.create({
   screen: {
     padding: Spacing.three,
+    gap: Spacing.four,
+  },
+  hero: {
+    paddingHorizontal: Spacing.three,
+    paddingBottom: Spacing.four,
+    borderBottomLeftRadius: 28,
+    borderBottomRightRadius: 28,
     gap: Spacing.three,
+  },
+  heroIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.16)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  heroDot: {
+    position: 'absolute',
+    top: 8,
+    right: 9,
+    width: 9,
+    height: 9,
+    borderRadius: 5,
+    backgroundColor: '#FF4D4F',
+    borderWidth: 1.5,
+    borderColor: '#FFFFFF',
+  },
+  search: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.two,
+    borderRadius: 16,
+    paddingLeft: 14,
+    paddingRight: 6,
+  },
+  filterButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 11,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   footer: {
     paddingHorizontal: Spacing.three,
@@ -263,41 +542,64 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
   },
   card: {
-    borderRadius: 16,
+    borderRadius: 20,
+    borderWidth: 1,
     padding: Spacing.three,
     gap: Spacing.two,
   },
   button: {
-    borderRadius: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.two,
+    borderRadius: 14,
     paddingVertical: 14,
     paddingHorizontal: Spacing.three,
   },
+  buttonCompact: {
+    borderRadius: 999,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+  },
   badge: {
     alignSelf: 'flex-start',
-    borderRadius: 999,
-    paddingHorizontal: Spacing.two,
+    borderRadius: 6,
+    paddingHorizontal: 7,
     paddingVertical: 2,
   },
+  badgeText: {
+    fontSize: 10.5,
+    lineHeight: 15,
+    fontWeight: 800,
+    letterSpacing: 0.5,
+  },
   banner: {
-    borderRadius: 12,
+    borderRadius: 16,
+    borderWidth: 1,
     padding: Spacing.three,
-    gap: Spacing.one,
+    gap: Spacing.two,
   },
   chip: {
     borderRadius: 999,
+    borderWidth: 1,
     paddingHorizontal: 14,
-    paddingVertical: 8,
+    paddingVertical: 7,
   },
   segmented: {
     flexDirection: 'row',
-    borderRadius: 12,
+    borderRadius: 14,
     padding: 4,
     gap: 4,
   },
   segment: {
     flex: 1,
-    borderRadius: 9,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    borderRadius: 11,
     paddingVertical: 10,
+    paddingHorizontal: 6,
   },
   row: {
     flexDirection: 'row',
@@ -305,8 +607,13 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: Spacing.two,
   },
+  sectionLabel: {
+    fontSize: 13,
+    letterSpacing: 0.8,
+  },
   input: {
-    borderRadius: 12,
+    borderRadius: 14,
+    borderWidth: 1,
     paddingHorizontal: Spacing.three,
     paddingVertical: 12,
     fontSize: 16,

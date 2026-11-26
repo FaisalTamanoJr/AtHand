@@ -46,6 +46,8 @@ export type Listing = {
   title: string;
   category: Category;
   emoji: string;
+  /** Bundled photo from `require()`. Listings made in the app have none and fall back to the emoji. */
+  photo?: number;
   description: string;
   knownDefects: string;
   /** Declared item value in pesos, capped at MAX_ITEM_VALUE. */
