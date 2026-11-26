@@ -1,0 +1,90 @@
+# Builds the AtHand prototype APK on GitHub's servers and publishes it as the
+# "latest-apk" release, so testers can download it straight to their phone.
+#
+# Runs on every push to main that touches the app, or by hand:
+# GitHub website/app → Actions → "Build Android APK" → Run workflow.
+
+name: Build Android APK
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'mobile/**'
+      - '.github/workflows/android-apk.yml'
+  workflow_dispatch:
+
+# A newer push cancels a build that's still running.
+concurrency:
+  group: android-apk
+  cancel-in-progress: true
+
+permissions:
+  contents: write # needed to publish the release
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    defaults:
+      run:
+        working-directory: mobile
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck and lint
+        run: |
+          npm run typecheck
+          npm run lint
+
+      - name: Generate the Android project
+        run: npx expo prebuild --platform android --no-install
+
+      # Gradle downloads any missing Android SDK packages (platform 37, NDK) itself.
+      - name: Build release APK
+        working-directory: mobile/android
+        run: >
+          ./gradlew assembleRelease
+          -PreactNativeArchitectures=arm64-v8a,armeabi-v7a
+          -Dorg.gradle.jvmargs="-Xmx4g -XX:MaxMetaspaceSize=1g"
+
+      - name: Rename APK
+        run: |
+          mkdir -p ../dist
+          cp android/app/build/outputs/apk/release/app-release.apk ../dist/AtHand-prototype.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: AtHand-prototype-apk
+          path: dist/AtHand-prototype.apk
+          retention-days: 14
+
+      # Replace the single rolling "latest-apk" release so the download link never changes.
+      - name: Publish to the latest-apk release
+        working-directory: .
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete latest-apk --cleanup-tag --yes || true
+          gh release create latest-apk dist/AtHand-prototype.apk \
+            --target "${{ github.sha }}" \
+            --prerelease \
+            --title "Latest prototype APK" \
+            --notes "Built from ${{ github.sha }} on $(date -u '+%Y-%m-%d %H:%M UTC'). Test build signed with the debug key, not for the Play Store."

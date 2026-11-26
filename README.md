@@ -21,7 +21,11 @@ Scan the QR code with Expo Go. Your phone and computer must be on the same Wi-Fi
 
 Copy `AtHand-prototype.apk` to an Android phone (Android 7 or newer) and open it. The phone will ask you to allow installs from that source (Files, Drive or Messenger), so allow it. Android may show a Play Protect warning because this test build isn't from the Play Store. Choose **Install anyway**.
 
-## Build the APK
+## Get the latest APK on your phone
+
+GitHub builds a fresh APK every time app changes are pushed to `main`. On your phone, sign in to GitHub in the browser or the GitHub app and open the repo's **Releases**, then **Latest prototype APK**, then `AtHand-prototype.apk`. You can also start a build by hand under **Actions → Build Android APK → Run workflow**. A build takes about 10 minutes.
+
+## Build the APK yourself
 
 You need JDK 17 and the Android SDK, with platform 37.0, build-tools 37.0.0, NDK 27.1.12297006 and CMake 3.22.1. Set `JAVA_HOME` and `ANDROID_HOME` to point at them.
 
